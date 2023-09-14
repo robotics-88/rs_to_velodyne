@@ -167,8 +167,13 @@ void add_time(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
     for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
         if (has_nan(pc_in->points[point_id]))
             continue;
-        // 跳过nan点
         pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
+        // 跳过nan点
+        //if (fill_time_zeros)
+        //	pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
+        //else
+	//       pc_out->points[valid_point_id++].time = 0.0;
+        //std::cout << "Time: " << float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp) << std::endl;
     }
 }
 
@@ -194,6 +199,35 @@ void rsHandler_XYZIRT(const sensor_msgs::PointCloud2 &pc_msg) {
     }
 }
 
+void rsHandler_XYZI_XYZIRT(sensor_msgs::PointCloud2 pc_msg) {
+    pcl::PointCloud<pcl::PointXYZI>::Ptr pc(new pcl::PointCloud<pcl::PointXYZI>());
+    pcl::PointCloud<VelodynePointXYZIRT>::Ptr pc_new(new pcl::PointCloud<VelodynePointXYZIRT>());
+    pcl::fromROSMsg(pc_msg, *pc);
+
+    // to new pointcloud
+    for (int point_id = 0; point_id < pc->points.size(); ++point_id) {
+        if (has_nan(pc->points[point_id]))
+            continue;
+
+        VelodynePointXYZIRT new_point;
+        new_point.x = pc->points[point_id].x;
+        new_point.y = pc->points[point_id].y;
+        new_point.z = pc->points[point_id].z;
+        new_point.intensity = pc->points[point_id].intensity;
+        // remap ring id
+        if (pc->height == 16) {
+            new_point.ring = RING_ID_MAP_16[point_id / pc->width];
+        } else if (pc->height == 128) {
+            new_point.ring = RING_ID_MAP_RUBY[point_id % pc->height];
+        }
+        new_point.time = 0.0;
+        pc_new->points.push_back(new_point);
+    }
+
+    publish_points(pc_new, pc_msg);
+}
+
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "rs_converter");
     ros::NodeHandle nh;
@@ -206,9 +240,11 @@ int main(int argc, char **argv) {
         output_type = argv[2];
 
         if (std::strcmp("XYZI", argv[1]) == 0) {
-            subRobosensePC = nh.subscribe("/rslidar_points", 1, rsHandler_XYZI);
+            subRobosensePC = nh.subscribe("/airsim_ros_node/base_link_frd/lidar/Lidar2", 1, rsHandler_XYZI); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
         } else if (std::strcmp("XYZIRT", argv[1]) == 0) {
-            subRobosensePC = nh.subscribe("/rslidar_points", 1, rsHandler_XYZIRT);
+            subRobosensePC = nh.subscribe("/airsim_ros_node/base_link_frd/lidar/Lidar2", 1, rsHandler_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
+        } else if (std::strcmp("XYZIT", argv[1]) == 0) {
+            subRobosensePC = nh.subscribe("/airsim_ros_node/base_link_frd/lidar/Lidar2", 1, rsHandler_XYZI_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
         } else {
             ROS_ERROR(argv[1]);
             ROS_ERROR("Unsupported input pointcloud type. Currently only support XYZI and XYZIRT.");

@@ -33,6 +33,12 @@ rosrun rs_to_velodyne rs_to_velodyne XYZI XYZIR
 ``` 
 The output point clouds are **XYZIR** point cloud `/velodyne_points` in Velodyne's format.
 
+### 3. XYZI input XYZIRT Output
+```
+rosrun rs_to_velodyne rs_to_velodyne XYZIT XYZIR
+``` 
+The output point clouds are **XYZIRT** point cloud `/velodyne_points` in Velodyne's format.
+
 
 ## Subscribes
 `/rslidar_points`: sensor_msgs.PointCloud2, from Robosense LiDAR.
