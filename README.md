@@ -39,7 +39,7 @@ rosrun rs_to_velodyne rs_to_velodyne XYZIT XYZIR
 ``` 
 The output point clouds are **XYZIRT** point cloud `/velodyne_points` in Velodyne's format.
 
-### 3. Airsim format to Velodyne Format
+### 4. Airsim format to Velodyne Format
 ```
 rosrun rs_to_velodyne airsim_velodyne
 ```
