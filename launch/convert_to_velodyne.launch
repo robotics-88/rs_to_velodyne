@@ -1,0 +1,5 @@
+<launch>
+	<arg name = "vehicle_frame" default="base_link_frd"/> 
+	<node pkg="rs_to_velodyne" type="airsim_velodyne.py" name="rs_to_velodyne" output="screen" args="$(arg vehicle_frame)" />
+
+</launch>

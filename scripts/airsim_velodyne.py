@@ -6,6 +6,7 @@ import json
 from sensor_msgs.point_cloud2 import create_cloud
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs import point_cloud2
+import sys
 
 class LiDARSubscriber:
     def __init__(self):
@@ -20,10 +21,19 @@ class LiDARSubscriber:
             PointField('intensity', 12, PointField.FLOAT32, 1),
             PointField('ring', 16, PointField.UINT16, 1)
         ]
+
+        args = rospy.myargv(argv=sys.argv)
+        if len(args)!=2:
+            vehicle_frame = "base_link_frd"
+        elif len(args) == 2:
+            vehicle_frame = args[1]
+
+        vehicle_topic = "/airsim_ros_node/" + vehicle_frame + "/lidar/Lidar2"
+
         self.read_airsim_settings()
         rospy.init_node('airsim_lidar2velodyne', anonymous=True)
         self.lidar_pub = rospy.Publisher("/velodyne_points", PointCloud2, queue_size=1)
-        rospy.Subscriber('/airsim_ros_node/base_link_frd/lidar/Lidar2', PointCloud2, self.lidar_callback)
+        rospy.Subscriber(vehicle_topic, PointCloud2, self.lidar_callback)
 
     def lidar_callback(self, data):
         # This function will be called every time a new message is received on the lidar_topic
