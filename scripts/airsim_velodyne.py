@@ -10,7 +10,6 @@ import sys
 
 class LiDARSubscriber:
     def __init__(self):
-        self.file_path = '/home/fyandun/Documents/AirSim/settings.json'
         self.channels = None
         self.lower_fov = None
         self.upper_fov = None
@@ -23,12 +22,13 @@ class LiDARSubscriber:
         ]
 
         args = rospy.myargv(argv=sys.argv)
-        if len(args)!=2:
-            vehicle_frame = "base_link_frd"
-        elif len(args) == 2:
-            vehicle_frame = args[1]
+        if len(args)!=3:
+            print("Missing arguments vehicle_frame and json_config")
+        elif len(args) == 3:
+            vehicle_enu_ned = args[1]
+            self.file_path = args[2]
 
-        vehicle_topic = "/airsim_ros_node/" + vehicle_frame + "/lidar/Lidar2"
+        vehicle_topic = "/airsim_ros_node/" + vehicle_enu_ned + "/lidar/Lidar2"
 
         self.read_airsim_settings()
         rospy.init_node('airsim_lidar2velodyne', anonymous=True)
