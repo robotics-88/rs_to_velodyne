@@ -25,10 +25,10 @@ class LiDARSubscriber:
         if len(args)!=3:
             print("Missing arguments vehicle_frame and json_config")
         elif len(args) == 3:
-            vehicle_enu_ned = args[1]
+            vehicle_frd_flu = args[1]
             self.file_path = args[2]
 
-        vehicle_topic = "/airsim_ros_node/" + vehicle_enu_ned + "/lidar/Lidar2"
+        vehicle_topic = "/airsim_ros_node/" + vehicle_frd_flu + "/lidar/Lidar2"
 
         self.read_airsim_settings()
         rospy.init_node('airsim_lidar2velodyne', anonymous=True)
