@@ -234,7 +234,6 @@ int main(int argc, char **argv) {
 
     std::string lidar_topic = "";
     std::string input_cloud_type = "";
-    std::string output_cloud_type = "";
     nh.getParam("/rs_to_velodyne/raw_lidar_topic", lidar_topic);
     nh.getParam("/rs_to_velodyne/input_cloud_type", input_cloud_type);
     nh.getParam("/rs_to_velodyne/output_cloud_type", output_cloud_type);
@@ -245,11 +244,11 @@ int main(int argc, char **argv) {
     }
 
     if (input_cloud_type == "XYZI") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
+        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI);
     } else if (input_cloud_type == "XYZIRT") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
+        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
     } else if (input_cloud_type == "XYZIT") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
+        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT);
     } else {
         ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
         ros::shutdown();
