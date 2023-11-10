@@ -7,7 +7,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-std::string output_type;
+std::string output_cloud_type;
 
 static int RING_ID_MAP_RUBY[] = {
         3, 66, 33, 96, 11, 74, 41, 104, 19, 82, 49, 112, 27, 90, 57, 120,
@@ -181,18 +181,18 @@ void rsHandler_XYZIRT(const sensor_msgs::PointCloud2 &pc_msg) {
     pcl::PointCloud<RsPointXYZIRT>::Ptr pc_in(new pcl::PointCloud<RsPointXYZIRT>());
     pcl::fromROSMsg(pc_msg, *pc_in);
 
-    if (output_type == "XYZIRT") {
+    if (output_cloud_type == "XYZIRT") {
         pcl::PointCloud<VelodynePointXYZIRT>::Ptr pc_out(new pcl::PointCloud<VelodynePointXYZIRT>());
         handle_pc_msg<RsPointXYZIRT, VelodynePointXYZIRT>(pc_in, pc_out);
         add_ring<RsPointXYZIRT, VelodynePointXYZIRT>(pc_in, pc_out);
         add_time<RsPointXYZIRT, VelodynePointXYZIRT>(pc_in, pc_out);
         publish_points(pc_out, pc_msg);
-    } else if (output_type == "XYZIR") {
+    } else if (output_cloud_type == "XYZIR") {
         pcl::PointCloud<VelodynePointXYZIR>::Ptr pc_out(new pcl::PointCloud<VelodynePointXYZIR>());
         handle_pc_msg<RsPointXYZIRT, VelodynePointXYZIR>(pc_in, pc_out);
         add_ring<RsPointXYZIRT, VelodynePointXYZIR>(pc_in, pc_out);
         publish_points(pc_out, pc_msg);
-    } else if (output_type == "XYZI") {
+    } else if (output_cloud_type == "XYZI") {
         pcl::PointCloud<pcl::PointXYZI>::Ptr pc_out(new pcl::PointCloud<pcl::PointXYZI>());
         handle_pc_msg<RsPointXYZIRT, pcl::PointXYZI>(pc_in, pc_out);
         publish_points(pc_out, pc_msg);
@@ -231,26 +231,38 @@ void rsHandler_XYZI_XYZIRT(sensor_msgs::PointCloud2 pc_msg) {
 int main(int argc, char **argv) {
     ros::init(argc, argv, "rs_converter");
     ros::NodeHandle nh;
-    if (argc < 3) {
-        ROS_ERROR(
-                "Please specify input pointcloud type( XYZI or XYZIRT) and output pointcloud type(XYZI, XYZIR, XYZIRT)!!!");
-        exit(1);
-    } else {
-        // 输出点云类型
-        output_type = argv[2];
 
-        if (std::strcmp("XYZI", argv[1]) == 0) {
-            subRobosensePC = nh.subscribe("/airsim_ros_node/base_link_frd/lidar/Lidar2", 1, rsHandler_XYZI); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
-        } else if (std::strcmp("XYZIRT", argv[1]) == 0) {
-            subRobosensePC = nh.subscribe("/airsim_ros_node/base_link_frd/lidar/Lidar2", 1, rsHandler_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
-        } else if (std::strcmp("XYZIT", argv[1]) == 0) {
-            subRobosensePC = nh.subscribe("/airsim_ros_node/base_link_frd/lidar/Lidar2", 1, rsHandler_XYZI_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
-        } else {
-            ROS_ERROR(argv[1]);
-            ROS_ERROR("Unsupported input pointcloud type. Currently only support XYZI and XYZIRT.");
-            exit(1);
-        }
+    std::string lidar_topic = "";
+    std::string input_cloud_type = "";
+    std::string output_cloud_type = "";
+    nh.getParam("/rs_to_velodyne/raw_lidar_topic", lidar_topic);
+    nh.getParam("/rs_to_velodyne/input_cloud_type", input_cloud_type);
+    nh.getParam("/rs_to_velodyne/output_cloud_type", output_cloud_type);
+
+    if (lidar_topic.empty()) {
+        ROS_ERROR("Please set raw_lidar_topic param in rs_to_velodyne launch file");
+        ros::shutdown();
     }
+
+    if (input_cloud_type == "XYZI") {
+        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
+    } else if (input_cloud_type == "XYZIRT") {
+        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
+    } else if (input_cloud_type == "XYZIT") {
+        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT); // /airsim_ros_node/base_link_frd/lidar/Lidar2, /velodyne_points
+    } else {
+        ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
+        ros::shutdown();
+    }
+
+    if (!(output_cloud_type == "XYZI" ||
+        output_cloud_type == "XYZIR" ||
+        output_cloud_type == "XYZRT")) {
+        
+        ROS_ERROR("Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT");
+        ros::shutdown();
+    }
+
     pubRobosensePC = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points", 1);
 
     ROS_INFO("Listening to /rslidar_points ......");
