@@ -25,7 +25,9 @@ roslaunch rs_to_velodyne rs_to_velodyne.launch
 
 ### Arguments
 `raw_lidar_topic`: The raw lidar topic to be converted.
+
 `input_cloud_type`: Input cloud format type (the type of pointcloud published by `raw_lidar_topic`). Options are XYZI, XYZIT, or XYZIRT.
+
 `output_cloud`: Output cloud format type. Options are XYZI, XYZIR, or XYZIRT.
 
 ## Subscribes
