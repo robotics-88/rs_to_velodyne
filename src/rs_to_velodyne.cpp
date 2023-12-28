@@ -243,16 +243,17 @@ int main(int argc, char **argv) {
         ros::shutdown();
     }
 
-    if (input_cloud_type == "XYZI") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI);
-    } else if (input_cloud_type == "XYZIRT") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
-    } else if (input_cloud_type == "XYZIT") {
+    // TODO decide whether to bring back options
+    // if (input_cloud_type == "XYZI") {
+    //     subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
+    // } else if (input_cloud_type == "XYZIRT") {
+    //     subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
+    // } else if (input_cloud_type == "XYZIT") {
         subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT);
-    } else {
-        ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
-        ros::shutdown();
-    }
+    // } else {
+    //     ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
+    //     ros::shutdown();
+    // }
 
     if (!(output_cloud_type == "XYZI" ||
         output_cloud_type == "XYZIR" ||
