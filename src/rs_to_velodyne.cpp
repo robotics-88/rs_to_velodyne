@@ -250,7 +250,6 @@ int main(int argc, char **argv) {
     // It is very unclear why uncommenting this case causes laserMapping to fail when running fast_lio_lc,
     // even when the input_cloud_type is XYZIT. Weird!!!
     // else if (input_cloud_type == "XYZIRT") {
-    //     std::cout << "CASE B\n";
     //     subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
     // } 
     else if (input_cloud_type == "XYZIT") {
