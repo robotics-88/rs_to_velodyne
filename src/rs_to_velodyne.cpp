@@ -229,6 +229,7 @@ void rsHandler_XYZI_XYZIRT(sensor_msgs::PointCloud2 pc_msg) {
 
 
 int main(int argc, char **argv) {
+
     ros::init(argc, argv, "rs_converter");
     ros::NodeHandle nh;
 
@@ -245,11 +246,16 @@ int main(int argc, char **argv) {
 
     if (input_cloud_type == "XYZI") {
         subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI);
-    } else if (input_cloud_type == "XYZIRT") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
-    } else if (input_cloud_type == "XYZIT") {
+    } 
+    // It is very unclear why uncommenting this case causes laserMapping to fail when running fast_lio_lc,
+    // even when the input_cloud_type is XYZIT. Weird!!!
+    // else if (input_cloud_type == "XYZIRT") {
+    //     subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
+    // } 
+    else if (input_cloud_type == "XYZIT") {
         subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT);
-    } else {
+    }
+    else {
         ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
         ros::shutdown();
     }

@@ -1,10 +1,10 @@
 <launch>
 
 	<arg name="raw_lidar_topic" default="/airsim_ros_node/MyVehicle/lidar/Lidar2"/>
-	<arg name="input_cloud_type" default="XYZI"/>
+	<arg name="input_cloud_type" default="XYZIT"/>
 	<arg name="output_cloud_type" default="XYZIR"/>
 	
-	<node pkg="rs_to_velodyne" type="rs_to_velodyne" name="rs_to_velodyne">
+	<node pkg="rs_to_velodyne" type="rs_to_velodyne" name="rs_to_velodyne" output="screen">
         <param name="raw_lidar_topic" value="$(arg raw_lidar_topic)"/>
         <param name="input_cloud_type" value="$(arg input_cloud_type)"/>
         <param name="output_cloud_type" value="$(arg output_cloud_type)"/>
