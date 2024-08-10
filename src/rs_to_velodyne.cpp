@@ -9,19 +9,19 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
     
     std::string lidar_topic = "";
     std::string input_cloud_type = "";
-    this->get_parameter("/rs_to_velodyne/raw_lidar_topic", lidar_topic);
-    this->get_parameter("/rs_to_velodyne/input_cloud_type", input_cloud_type);
-    this->get_parameter("/rs_to_velodyne/output_cloud_type", output_cloud_type);
+    get_parameter("/rs_to_velodyne/raw_lidar_topic", lidar_topic);
+    get_parameter("/rs_to_velodyne/input_cloud_type", input_cloud_type);
+    get_parameter("/rs_to_velodyne/output_cloud_type", output_cloud_type);
 
     rclcpp::QoS qos(40);
 
     if (lidar_topic.empty()) {
         // ROS_ERROR("Please set raw_lidar_topic param in rs_to_velodyne launch file");
-        rclcpp::shutdown();
+        // rclcpp::shutdown();
     }
 
     if (input_cloud_type == "XYZI") {
-        // subRobosensePC = this->create_subscription<sensor_msgs::msg::PointCloud2>(lidar_topic, 1, rsHandler_XYZI);
+        subRobosensePC = this->create_subscription<sensor_msgs::msg::PointCloud2>(lidar_topic, 1, std::bind(&RsToVelodyne::rsHandler_XYZI, this, std::placeholders::_1));
     } 
     // It is very unclear why uncommenting this case causes laserMapping to fail when running fast_lio_lc,
     // even when the input_cloud_type is XYZIT. Weird!!!
@@ -35,7 +35,7 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
     }
     else {
         // ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
-        rclcpp::shutdown();
+        // rclcpp::shutdown();
     }
 
     if (!(output_cloud_type == "XYZI" ||
@@ -43,7 +43,7 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
         output_cloud_type == "XYZRT")) {
         
         // ROS_ERROR("Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT");
-        rclcpp::shutdown();
+        // rclcpp::shutdown();
     }
 
     pubRobosensePC = this->create_publisher<sensor_msgs::msg::PointCloud2>("/velodyne_points", 1);
