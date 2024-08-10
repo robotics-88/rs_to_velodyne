@@ -3,7 +3,7 @@
 import rospy
 import numpy as np
 import json
-from sensor_msgs.point_cloud2 import create_cloud
+from sensor_msgs.msg.point_cloud2 import create_cloud
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs import point_cloud2
 import sys

@@ -1,106 +1,59 @@
-//#include "utility.h"
-#include <ros/ros.h>
+#include "rs_to_velodyne.h"
 
-#include <sensor_msgs/PointCloud2.h>
+namespace rs_to_velodyne
+{
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
+RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
+    : Node("rs_converter", options)
+{
+    
+    std::string lidar_topic = "";
+    std::string input_cloud_type = "";
+    this->get_parameter("/rs_to_velodyne/raw_lidar_topic", lidar_topic);
+    this->get_parameter("/rs_to_velodyne/input_cloud_type", input_cloud_type);
+    this->get_parameter("/rs_to_velodyne/output_cloud_type", output_cloud_type);
 
-std::string output_cloud_type;
+    rclcpp::QoS qos(40);
 
-static int RING_ID_MAP_RUBY[] = {
-        3, 66, 33, 96, 11, 74, 41, 104, 19, 82, 49, 112, 27, 90, 57, 120,
-        35, 98, 1, 64, 43, 106, 9, 72, 51, 114, 17, 80, 59, 122, 25, 88,
-        67, 34, 97, 0, 75, 42, 105, 8, 83, 50, 113, 16, 91, 58, 121, 24,
-        99, 2, 65, 32, 107, 10, 73, 40, 115, 18, 81, 48, 123, 26, 89, 56,
-        7, 70, 37, 100, 15, 78, 45, 108, 23, 86, 53, 116, 31, 94, 61, 124,
-        39, 102, 5, 68, 47, 110, 13, 76, 55, 118, 21, 84, 63, 126, 29, 92,
-        71, 38, 101, 4, 79, 46, 109, 12, 87, 54, 117, 20, 95, 62, 125, 28,
-        103, 6, 69, 36, 111, 14, 77, 44, 119, 22, 85, 52, 127, 30, 93, 60
-};
-static int RING_ID_MAP_16[] = {
-        0, 1, 2, 3, 4, 5, 6, 7, 15, 14, 13, 12, 11, 10, 9, 8
-};
-
-// rslidar和velodyne的格式有微小的区别
-// rslidar的点云格式
-struct RsPointXYZIRT {
-    PCL_ADD_POINT4D;
-    uint8_t intensity;
-    uint16_t ring = 0;
-    double timestamp = 0;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-} EIGEN_ALIGN16;
-POINT_CLOUD_REGISTER_POINT_STRUCT(RsPointXYZIRT,
-                                  (float, x, x)(float, y, y)(float, z, z)(uint8_t, intensity, intensity)
-                                          (uint16_t, ring, ring)(double, timestamp, timestamp))
-
-// velodyne的点云格式
-struct VelodynePointXYZIRT {
-    PCL_ADD_POINT4D
-
-    PCL_ADD_INTENSITY;
-    uint16_t ring;
-    float time;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-} EIGEN_ALIGN16;
-
-POINT_CLOUD_REGISTER_POINT_STRUCT (VelodynePointXYZIRT,
-                                   (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)
-                                           (uint16_t, ring, ring)(float, time, time)
-)
-
-struct VelodynePointXYZIR {
-    PCL_ADD_POINT4D
-
-    PCL_ADD_INTENSITY;
-    uint16_t ring;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-} EIGEN_ALIGN16;
-
-POINT_CLOUD_REGISTER_POINT_STRUCT (VelodynePointXYZIR,
-                                   (float, x, x)(float, y, y)
-                                           (float, z, z)(float, intensity, intensity)
-                                           (uint16_t, ring, ring)
-)
-
-ros::Subscriber subRobosensePC;
-ros::Publisher pubRobosensePC;
-
-template<typename T>
-bool has_nan(T point) {
-
-    // remove nan point, or the feature assocaion will crash, the surf point will containing nan points
-    // pcl remove nan not work normally
-    // ROS_ERROR("Containing nan point!");
-    if (pcl_isnan(point.x) || pcl_isnan(point.y) || pcl_isnan(point.z)) {
-        return true;
-    } else {
-        return false;
+    if (lidar_topic.empty()) {
+        // ROS_ERROR("Please set raw_lidar_topic param in rs_to_velodyne launch file");
+        rclcpp::shutdown();
     }
+
+    if (input_cloud_type == "XYZI") {
+        // subRobosensePC = this->create_subscription<sensor_msgs::msg::PointCloud2>(lidar_topic, 1, rsHandler_XYZI);
+    } 
+    // It is very unclear why uncommenting this case causes laserMapping to fail when running fast_lio_lc,
+    // even when the input_cloud_type is XYZIT. Weird!!!
+    // else if (input_cloud_type == "XYZIRT") {
+    //     subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
+    // } 
+    else if (input_cloud_type == "XYZIT") {
+        subRobosensePC = this->create_subscription<sensor_msgs::msg::PointCloud2>(lidar_topic, 1, std::bind(&RsToVelodyne::rsHandler_XYZI_XYZIRT, this, std::placeholders::_1));
+
+        // subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT);
+    }
+    else {
+        // ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
+        rclcpp::shutdown();
+    }
+
+    if (!(output_cloud_type == "XYZI" ||
+        output_cloud_type == "XYZIR" ||
+        output_cloud_type == "XYZRT")) {
+        
+        // ROS_ERROR("Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT");
+        rclcpp::shutdown();
+    }
+
+    pubRobosensePC = this->create_publisher<sensor_msgs::msg::PointCloud2>("/velodyne_points", 1);
 }
 
-template<typename T>
-void publish_points(T &new_pc, const sensor_msgs::PointCloud2 &old_msg) {
-    // pc properties
-    new_pc->is_dense = true;
-
-    // publish
-    sensor_msgs::PointCloud2 pc_new_msg;
-    pcl::toROSMsg(*new_pc, pc_new_msg);
-    pc_new_msg.header = old_msg.header;
-    pc_new_msg.header.frame_id = "velodyne";
-    pubRobosensePC.publish(pc_new_msg);
-}
-
-void rsHandler_XYZI(sensor_msgs::PointCloud2 pc_msg) {
+void RsToVelodyne::rsHandler_XYZI(const sensor_msgs::msg::PointCloud2::SharedPtr pc_msg) {
     pcl::PointCloud<pcl::PointXYZI>::Ptr pc(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<VelodynePointXYZIR>::Ptr pc_new(new pcl::PointCloud<VelodynePointXYZIR>());
-    pcl::fromROSMsg(pc_msg, *pc);
+    // pcl_conversions::toPCL(*pc_msg, *pc);
+    pcl::fromROSMsg(*pc_msg, *pc);
 
     // to new pointcloud
     for (int point_id = 0; point_id < pc->points.size(); ++point_id) {
@@ -124,62 +77,9 @@ void rsHandler_XYZI(sensor_msgs::PointCloud2 pc_msg) {
     publish_points(pc_new, pc_msg);
 }
 
-
-template<typename T_in_p, typename T_out_p>
-void handle_pc_msg(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
-                   const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
-
-    // to new pointcloud
-    for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
-        if (has_nan(pc_in->points[point_id]))
-            continue;
-        T_out_p new_point;
-//        std::copy(pc->points[point_id].data, pc->points[point_id].data + 4, new_point.data);
-        new_point.x = pc_in->points[point_id].x;
-        new_point.y = pc_in->points[point_id].y;
-        new_point.z = pc_in->points[point_id].z;
-        new_point.intensity = pc_in->points[point_id].intensity;
-//        new_point.ring = pc->points[point_id].ring;
-//        // 计算相对于第一个点的相对时间
-//        new_point.time = float(pc->points[point_id].timestamp - pc->points[0].timestamp);
-        pc_out->points.push_back(new_point);
-    }
-}
-
-template<typename T_in_p, typename T_out_p>
-void add_ring(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
-              const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
-    // to new pointcloud
-    int valid_point_id = 0;
-    for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
-        if (has_nan(pc_in->points[point_id]))
-            continue;
-        // 跳过nan点
-        pc_out->points[valid_point_id++].ring = pc_in->points[point_id].ring;
-    }
-}
-
-template<typename T_in_p, typename T_out_p>
-void add_time(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
-              const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
-    // to new pointcloud
-    int valid_point_id = 0;
-    for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
-        if (has_nan(pc_in->points[point_id]))
-            continue;
-        pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
-        // 跳过nan点
-        //if (fill_time_zeros)
-        //	pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
-        //else
-	//       pc_out->points[valid_point_id++].time = 0.0;
-        //std::cout << "Time: " << float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp) << std::endl;
-    }
-}
-
-void rsHandler_XYZIRT(const sensor_msgs::PointCloud2 &pc_msg) {
+void RsToVelodyne::rsHandler_XYZIRT(const sensor_msgs::msg::PointCloud2::SharedPtr pc_msg) {
     pcl::PointCloud<RsPointXYZIRT>::Ptr pc_in(new pcl::PointCloud<RsPointXYZIRT>());
-    pcl::fromROSMsg(pc_msg, *pc_in);
+    pcl::fromROSMsg(*pc_msg, *pc_in);
 
     if (output_cloud_type == "XYZIRT") {
         pcl::PointCloud<VelodynePointXYZIRT>::Ptr pc_out(new pcl::PointCloud<VelodynePointXYZIRT>());
@@ -199,10 +99,10 @@ void rsHandler_XYZIRT(const sensor_msgs::PointCloud2 &pc_msg) {
     }
 }
 
-void rsHandler_XYZI_XYZIRT(sensor_msgs::PointCloud2 pc_msg) {
+void RsToVelodyne::rsHandler_XYZI_XYZIRT(const sensor_msgs::msg::PointCloud2::SharedPtr pc_msg) {
     pcl::PointCloud<pcl::PointXYZI>::Ptr pc(new pcl::PointCloud<pcl::PointXYZI>());
     pcl::PointCloud<VelodynePointXYZIRT>::Ptr pc_new(new pcl::PointCloud<VelodynePointXYZIRT>());
-    pcl::fromROSMsg(pc_msg, *pc);
+    pcl::fromROSMsg(*pc_msg, *pc);
 
     // to new pointcloud
     for (int point_id = 0; point_id < pc->points.size(); ++point_id) {
@@ -227,49 +127,76 @@ void rsHandler_XYZI_XYZIRT(sensor_msgs::PointCloud2 pc_msg) {
     publish_points(pc_new, pc_msg);
 }
 
+// bool RsToVelodyne::has_nan(T point) {
 
-int main(int argc, char **argv) {
+//     // remove nan point, or the feature assocaion will crash, the surf point will containing nan points
+//     // pcl remove nan not work normally
+//     // ROS_ERROR("Containing nan point!");
+//     if (std::isnan(point.x) || std::isnan(point.y) || std::isnan(point.z)) {
+//         return true;
+//     } else {
+//         return false;
+//     }
+// }
 
-    ros::init(argc, argv, "rs_converter");
-    ros::NodeHandle nh;
+// void RsToVelodyne::publish_points(T &new_pc, const sensor_msgs::msg::PointCloud2 &old_msg) {
+//     // pc properties
+//     new_pc->is_dense = true;
 
-    std::string lidar_topic = "";
-    std::string input_cloud_type = "";
-    nh.getParam("/rs_to_velodyne/raw_lidar_topic", lidar_topic);
-    nh.getParam("/rs_to_velodyne/input_cloud_type", input_cloud_type);
-    nh.getParam("/rs_to_velodyne/output_cloud_type", output_cloud_type);
+//     // publish
+//     sensor_msgs::msg::PointCloud2 pc_new_msg;
+//     pcl::toROSMsg(*new_pc, pc_new_msg);
+//     pc_new_msg.header = old_msg.header;
+//     pc_new_msg.header.frame_id = "velodyne";
+//     pubRobosensePC->publish(pc_new_msg);
+// }
 
-    if (lidar_topic.empty()) {
-        ROS_ERROR("Please set raw_lidar_topic param in rs_to_velodyne launch file");
-        ros::shutdown();
-    }
+// void RsToVelodyne::handle_pc_msg(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
+//                 const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
 
-    if (input_cloud_type == "XYZI") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI);
-    } 
-    // It is very unclear why uncommenting this case causes laserMapping to fail when running fast_lio_lc,
-    // even when the input_cloud_type is XYZIT. Weird!!!
-    // else if (input_cloud_type == "XYZIRT") {
-    //     subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZIRT);
-    // } 
-    else if (input_cloud_type == "XYZIT") {
-        subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT);
-    }
-    else {
-        ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
-        ros::shutdown();
-    }
+//     // to new pointcloud
+//     for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
+//         if (has_nan(pc_in->points[point_id]))
+//             continue;
+//         T_out_p new_point;
+// //        std::copy(pc->points[point_id].data, pc->points[point_id].data + 4, new_point.data);
+//         new_point.x = pc_in->points[point_id].x;
+//         new_point.y = pc_in->points[point_id].y;
+//         new_point.z = pc_in->points[point_id].z;
+//         new_point.intensity = pc_in->points[point_id].intensity;
+// //        new_point.ring = pc->points[point_id].ring;
+// //        // 计算相对于第一个点的相对时间
+// //        new_point.time = float(pc->points[point_id].timestamp - pc->points[0].timestamp);
+//         pc_out->points.push_back(new_point);
+//     }
+// }
 
-    if (!(output_cloud_type == "XYZI" ||
-        output_cloud_type == "XYZIR" ||
-        output_cloud_type == "XYZRT")) {
-        
-        ROS_ERROR("Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT");
-        ros::shutdown();
-    }
+// void RsToVelodyne::add_ring(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
+//             const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
+//     // to new pointcloud
+//     int valid_point_id = 0;
+//     for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
+//         if (has_nan(pc_in->points[point_id]))
+//             continue;
+//         // 跳过nan点
+//         pc_out->points[valid_point_id++].ring = pc_in->points[point_id].ring;
+//     }
+// }
 
-    pubRobosensePC = nh.advertise<sensor_msgs::PointCloud2>("/velodyne_points", 1);
-
-    ros::spin();
-    return 0;
+// void RsToVelodyne::add_time(const typename pcl::PointCloud<T_in_p>::Ptr &pc_in,
+//             const typename pcl::PointCloud<T_out_p>::Ptr &pc_out) {
+//     // to new pointcloud
+//     int valid_point_id = 0;
+//     for (int point_id = 0; point_id < pc_in->points.size(); ++point_id) {
+//         if (has_nan(pc_in->points[point_id]))
+//             continue;
+//         pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
+//         // 跳过nan点
+//         //if (fill_time_zeros)
+//         //	pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
+//         //else
+//     //       pc_out->points[valid_point_id++].time = 0.0;
+//         //std::cout << "Time: " << float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp) << std::endl;
+//     }
+// }
 }

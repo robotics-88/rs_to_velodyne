@@ -1,35 +1,84 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5)
 project(rs_to_velodyne)
+
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
+find_package(PCL REQUIRED)
+
+find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+
+include_directories(
+	include
+	${PCL_INCLUDE_DIRS}
+)
+
+add_executable(rs_to_velodyne 
+  src/rs_to_velodyne_node.cpp
+)
+
+add_library(rs_to_velodyne_lib 
+  src/rs_to_velodyne.cpp
+)
+
+ament_target_dependencies(rs_to_velodyne_lib 
+  rclcpp
   pcl_ros
   pcl_conversions
-
   std_msgs
   sensor_msgs
 )
 
-catkin_package(
-  INCLUDE_DIRS 
-  DEPENDS PCL
+
+target_link_libraries(rs_to_velodyne 
+  rs_to_velodyne_lib
+  ${PCL_LIBRARIES} 
+  ${OpenCV_LIBRARIES}
 )
 
-include_directories(
-	include
-	${catkin_INCLUDE_DIRS}
-	${PCL_INCLUDE_DIRS}
+ament_target_dependencies(rs_to_velodyne 
+  rclcpp
+  pcl_ros
+  pcl_conversions
+  std_msgs
+  sensor_msgs
 )
 
-link_directories(
-	include
-	${PCL_LIBRARY_DIRS}
+#############
+## Install ##
+#############
+
+install(TARGETS
+    #list of nodes
+    rs_to_velodyne
+    DESTINATION lib/${PROJECT_NAME}
 )
 
+install(TARGETS 
+    #list of shared libraries
+    rs_to_velodyne
+    ARCHIVE
+    DESTINATION lib
+    LIBRARY
+    DESTINATION lib
+)
 
-add_executable(rs_to_velodyne src/rs_to_velodyne.cpp)
-add_dependencies(rs_to_velodyne ${catkin_EXPORTED_TARGETS})
-target_link_libraries(rs_to_velodyne ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+install(FILES 
+  #list of necessary files (xml...)
+  README.md
+  DESTINATION share/${PROJECT_NAME}
+)
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+
+
+ament_export_include_directories(${INCLUDE_DIRS})
+ament_export_libraries(rs_to_velodyne)
+
+ament_package()
