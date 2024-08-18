@@ -7,16 +7,17 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
     : Node("rs_converter", options)
 {
     
-    std::string lidar_topic = "";
-    std::string input_cloud_type = "";
-    get_parameter("/rs_to_velodyne/raw_lidar_topic", lidar_topic);
-    get_parameter("/rs_to_velodyne/input_cloud_type", input_cloud_type);
-    get_parameter("/rs_to_velodyne/output_cloud_type", output_cloud_type);
+    std::string lidar_topic = "/airsim_ros_node/MyVehicle/lidar/Lidar2";
+    std::string input_cloud_type = "XYZIT";
+    output_cloud_type = "XYZIR";
+    this->get_parameter("raw_lidar_topic", lidar_topic);
+    this->get_parameter("input_cloud_type", input_cloud_type);
+    this->get_parameter("output_cloud_type", output_cloud_type);
 
     rclcpp::QoS qos(40);
 
     if (lidar_topic.empty()) {
-        // ROS_ERROR("Please set raw_lidar_topic param in rs_to_velodyne launch file");
+        std::cout << "Please set raw_lidar_topic param in rs_to_velodyne launch file" << std::endl;
         // rclcpp::shutdown();
     }
 
@@ -34,7 +35,7 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
         // subRobosensePC = nh.subscribe(lidar_topic, 1, rsHandler_XYZI_XYZIRT);
     }
     else {
-        // ROS_ERROR("Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
+        std::cout << "Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT" << std::endl;
         // rclcpp::shutdown();
     }
 
@@ -42,7 +43,7 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
         output_cloud_type == "XYZIR" ||
         output_cloud_type == "XYZRT")) {
         
-        // ROS_ERROR("Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT");
+        std::cout << "Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT" << std::endl;
         // rclcpp::shutdown();
     }
 
