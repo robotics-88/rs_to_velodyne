@@ -4,7 +4,7 @@ project(rs_to_velodyne)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3")
 
 find_package(PCL REQUIRED)
 
@@ -24,7 +24,7 @@ add_executable(rs_to_velodyne
   src/rs_to_velodyne_node.cpp
 )
 
-add_library(rs_to_velodyne_lib 
+add_library(rs_to_velodyne_lib SHARED
   src/rs_to_velodyne.cpp
 )
 
