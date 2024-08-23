@@ -56,18 +56,10 @@ ament_target_dependencies(rs_to_velodyne
 #############
 
 install(TARGETS
-    #list of nodes
-    rs_to_velodyne
-    DESTINATION lib/${PROJECT_NAME}
-)
-
-install(TARGETS 
-    #list of shared libraries
-    rs_to_velodyne
-    ARCHIVE
-    DESTINATION lib
-    LIBRARY
-    DESTINATION lib
+  rs_to_velodyne
+  rs_to_velodyne_lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
 install(FILES 
