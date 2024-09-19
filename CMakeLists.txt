@@ -28,22 +28,13 @@ add_library(rs_to_velodyne_lib SHARED
   src/rs_to_velodyne.cpp
 )
 
-ament_target_dependencies(rs_to_velodyne_lib 
-  rclcpp
-  pcl_ros
-  pcl_conversions
-  std_msgs
-  sensor_msgs
-)
-
-
 target_link_libraries(rs_to_velodyne 
   rs_to_velodyne_lib
   ${PCL_LIBRARIES} 
   ${OpenCV_LIBRARIES}
 )
 
-ament_target_dependencies(rs_to_velodyne 
+ament_target_dependencies(rs_to_velodyne_lib 
   rclcpp
   pcl_ros
   pcl_conversions
