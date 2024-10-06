@@ -17,8 +17,7 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
     rclcpp::QoS qos(40);
 
     if (lidar_topic.empty()) {
-        std::cout << "Please set raw_lidar_topic param in rs_to_velodyne launch file" << std::endl;
-        // rclcpp::shutdown();
+        RCLCPP_WARN(this->get_logger(), "Please set raw_lidar_topic param in rs_to_velodyne launch file");
     }
 
     if (input_cloud_type == "XYZI") {
@@ -33,14 +32,14 @@ RsToVelodyne::RsToVelodyne(const rclcpp::NodeOptions& options)
         subRobosensePC = this->create_subscription<sensor_msgs::msg::PointCloud2>(lidar_topic, 1, std::bind(&RsToVelodyne::rsHandler_XYZI_XYZIRT, this, std::placeholders::_1));
     }
     else {
-        std::cout << "Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT" << std::endl;
+        RCLCPP_WARN(this->get_logger(), "Please set input_cloud_type param in rs_to_velodyne launch file to XYZI or XYZIRT");
     }
 
     if (!(output_cloud_type == "XYZI" ||
         output_cloud_type == "XYZIR" ||
         output_cloud_type == "XYZRT")) {
         
-        std::cout << "Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT" << std::endl;
+        RCLCPP_WARN(this->get_logger(), "Please set output_cloud_type param in rs_to_velodyne launch file to XYZI, XYZIR, or XYZRT");
     }
 
     pubRobosensePC = this->create_publisher<sensor_msgs::msg::PointCloud2>("/velodyne_points", 1);
