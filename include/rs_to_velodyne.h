@@ -74,7 +74,6 @@ class RsToVelodyne : public rclcpp::Node
 {
 public:
     explicit RsToVelodyne(const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
-    // RsToVelodyne(const std::shared_ptr<rclcpp::Node> nh);
     ~RsToVelodyne(){};
 
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subRobosensePC;
@@ -91,7 +90,6 @@ public:
 
         // remove nan point, or the feature assocaion will crash, the surf point will containing nan points
         // pcl remove nan not work normally
-        // ROS_ERROR("Containing nan point!");
         if (std::isnan(point.x) || std::isnan(point.y) || std::isnan(point.z)) {
             return true;
         } else {
@@ -121,14 +119,11 @@ public:
             if (has_nan(pc_in->points[point_id]))
                 continue;
             T_out_p new_point;
-    //        std::copy(pc->points[point_id].data, pc->points[point_id].data + 4, new_point.data);
             new_point.x = pc_in->points[point_id].x;
             new_point.y = pc_in->points[point_id].y;
             new_point.z = pc_in->points[point_id].z;
             new_point.intensity = pc_in->points[point_id].intensity;
-    //        new_point.ring = pc->points[point_id].ring;
     //        // 计算相对于第一个点的相对时间
-    //        new_point.time = float(pc->points[point_id].timestamp - pc->points[0].timestamp);
             pc_out->points.push_back(new_point);
         }
     }
@@ -156,11 +151,6 @@ public:
                 continue;
             pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
             // 跳过nan点
-            //if (fill_time_zeros)
-            //	pc_out->points[valid_point_id++].time = float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp);
-            //else
-        //       pc_out->points[valid_point_id++].time = 0.0;
-            //std::cout << "Time: " << float(pc_in->points[point_id].timestamp - pc_in->points[0].timestamp) << std::endl;
         }
     }
 
